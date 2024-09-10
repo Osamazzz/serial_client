@@ -3,13 +3,13 @@
 import binascii
 import re
 import sys
+import time
 
 from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QCloseEvent
 from PyQt5.QtSerialPort import QSerialPort, QSerialPortInfo
 from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import QApplication, QMainWindow
-from tornado.gen import sleep
 
 from Client_Util import State
 from Client_Util import int8_from_unsigned
@@ -61,8 +61,23 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
 
     # 定时器超时方法
     def timer_timeout(self):
-        self.TextEdit_Receive.insertPlainText("超时,测试结束" + "\r\n")
-        # self.curState = State.IDLE
+        self.TextEdit_Receive.insertPlainText("超时,测试失败" + "\r\n")
+        print("超时了")
+        # 直接计算rssi和丢包率
+        if self.receivePacketNum == 0:
+            self.TextEdit_Receive.insertPlainText(
+                time.strftime('%Y-%m-%d %H:%M:%S,', time.localtime()) + "目前丢包率为:100%,请检查设备是否正常\n")
+        else:
+            rssi = self.totalRSSI / self.receivePacketNum
+            lossRate = (100 - self.receivePacketNum) / 100
+            print("rssi:" + str(rssi) + ", loss:" + str(lossRate))
+            self.TextEdit_Receive.insertPlainText(
+                time.strftime('%Y-%m-%d %H:%M:%S,', time.localtime()) + "目前信号强度为:" + str(
+                    rssi) + ", 丢包率为:" + str(lossRate) + "%\n")
+        self.curState = State.IDLE
+        self.totalRSSI = 0
+        self.receivePacketNum = 0
+        self.curPacketNum = -1
         self.timer.stop()
 
     #  打开两个串口
@@ -158,13 +173,13 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
         self.TextEdit_Receive.insertPlainText("开始进行发送测试..\n")
         self.Com_Send_Data(self.com1, "AT+SET=TESTTX\r\n")  # 向待测设备串口发送->发送模式AT指令
         self.Com_Send_Data(self.com2, "AT+SET=TESTRX\r\n")  # 向陪测设备串口发送->接收模式AT指令
-        self.timer.start(TotalPacketNum * SendingInterval + 2000)   # 开启定时器
-        self.Com_Close_Button.setEnabled(False)
-        self.Com_Open_Button.setEnabled(False)
-        self.Com_Reset_Button.setEnabled(True)
-        self.ClearButton.setEnabled(True)
-        self.Com_TX_Set_Button.setEnabled(True)
-        self.Com_RX_Set_Button.setEnabled(False)
+        self.timer.start(TotalPacketNum * SendingInterval + 2000)  # 开启定时器
+        # self.Com_Close_Button.setEnabled(False)
+        # self.Com_Open_Button.setEnabled(False)
+        # self.Com_Reset_Button.setEnabled(True)
+        # self.ClearButton.setEnabled(True)
+        # self.Com_TX_Set_Button.setEnabled(True)
+        # self.Com_RX_Set_Button.setEnabled(False)
 
     # 接收功能测试
     def Com_RX_Set_Button_Clicked(self):
@@ -178,13 +193,13 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
         self.TextEdit_Receive.insertPlainText("开始进行接收测试..\n")
         self.Com_Send_Data(self.com1, "AT+SET=TESTRX\r\n")  # 向待测设备串口发送->接收模式AT指令
         self.Com_Send_Data(self.com2, "AT+SET=TESTTX\r\n")  # 向陪测设备串口发送->发送模式AT指令
-        self.timer.start(TotalPacketNum * SendingInterval + 2000)   # 开启定时器
-        self.Com_Close_Button.setEnabled(False)
-        self.Com_Open_Button.setEnabled(False)
-        self.Com_Reset_Button.setEnabled(True)
-        self.ClearButton.setEnabled(True)
-        self.Com_TX_Set_Button.setEnabled(False)
-        self.Com_RX_Set_Button.setEnabled(True)
+        self.timer.start(TotalPacketNum * SendingInterval + 2000)  # 开启定时器
+        # self.Com_Close_Button.setEnabled(False)
+        # self.Com_Open_Button.setEnabled(False)
+        # self.Com_Reset_Button.setEnabled(True)
+        # self.ClearButton.setEnabled(True)
+        # self.Com_TX_Set_Button.setEnabled(False)
+        # self.Com_RX_Set_Button.setEnabled(True)
 
     # 发送复位AT指令，使两个设备进入IDLE状态
     def Com_Reset_Button_Clicked(self):
@@ -199,12 +214,12 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
         self.Com_Send_Data(self.com1, "AT+RESET\r\n")
         self.Com_Send_Data(self.com2, "AT+RESET\r\n")
         self.timer.stop()
-        self.Com_Close_Button.setEnabled(True)
-        self.Com_Open_Button.setEnabled(True)
-        self.Com_Reset_Button.setEnabled(True)
-        self.ClearButton.setEnabled(True)
-        self.Com_TX_Set_Button.setEnabled(True)
-        self.Com_RX_Set_Button.setEnabled(True)
+        # self.Com_Close_Button.setEnabled(True)
+        # self.Com_Open_Button.setEnabled(True)
+        # self.Com_Reset_Button.setEnabled(True)
+        # self.ClearButton.setEnabled(True)
+        # self.Com_TX_Set_Button.setEnabled(True)
+        # self.Com_RX_Set_Button.setEnabled(True)
 
     # 串口刷新
     def Com_Refresh_Button_Clicked(self):
@@ -230,18 +245,19 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
         if self.curState == State.IDLE:  # 如果当前状态为IDLE，则停止进行接收
             return
         else:
-            if self.isTimeOut:
-                print("超时了")
-                # 直接计算rssi和丢包率
-                rssi = self.totalRSSI / self.receivePacketNum
-                lossRate = (100 - self.receivePacketNum) / 100
-                print("rssi:" + str(rssi) + ", loss:" + str(lossRate))
-                self.curState = State.IDLE
-                self.totalRSSI = 0
-                self.receivePacketNum = 0
-                self.curPacketNum = -1
-                self.isTimeOut = False
-                return
+            # if self.isTimeOut:
+            #     print("超时了")
+            #     # 直接计算rssi和丢包率
+            #     rssi = self.totalRSSI / self.receivePacketNum
+            #     lossRate = (100 - self.receivePacketNum) / 100
+            #     print("rssi:" + str(rssi) + ", loss:" + str(lossRate))
+            #     self.TextEdit_Receive.insertPlainText("测试超时失败" + "目前信号强度为:" + str(rssi) + ", 丢包率为:" + str(lossRate) + "%\n")
+            #     self.curState = State.IDLE
+            #     self.totalRSSI = 0
+            #     self.receivePacketNum = 0
+            #     self.curPacketNum = -1
+            #     self.isTimeOut = False
+            #     return
             serial_num, curRSSI, rxData = 0, 0, ""
             try:
                 # 处理接收到的数据
@@ -257,25 +273,34 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
                     self.totalRSSI += curRSSI  # 加入总RSSI，用于计算平均RSSI
                     self.receivePacketNum += 1
                     if not self.hexShowing_checkBox.isChecked():  # 如果不以16进制显示
+                        com_rev = ""
                         try:
+                            if self.curState == State.RECEIVING:
+                                com_rev = "待测设备"
+                            elif self.curState == State.SENDING:
+                                com_rev = "陪测设备"
                             print(rxData.decode('ascii'))
                             self.TextEdit_Receive.insertPlainText(
-                                "接收到第" + str(serial_num + 1) + "个包" + '\r')  # 这里+1是为了让序号从1开始
+                                time.strftime('%Y-%m-%d %H:%M:%S ', time.localtime()) + com_rev +
+                                "接收到第" + str(serial_num + 1) + "个包,")  # 这里+1是为了让序号从1开始
                             self.TextEdit_Receive.insertPlainText("信号强度为:" + str(curRSSI) + '\r\n')
                             if self.curPacketNum == 99 and (100 - self.receivePacketNum) / 100 < 0.05:
                                 lossRate = (100 - self.receivePacketNum) / 100 * 100
                                 if self.curState == State.RECEIVING:  # 如果是接收测试
-                                    self.TextEdit_Receive.insertPlainText("接收测试通过,丢包率为:" + str(lossRate)
-                                                                          + "%, 平均信号强度:" + str(
-                                        self.totalRSSI / self.receivePacketNum) + '\r\n')
+                                    self.TextEdit_Receive.insertPlainText(time.strftime(
+                                        '%Y-%m-%d %H:%M:%S ', time.localtime())
+                                        + "接收测试通过,丢包率为:" + str(lossRate)
+                                        + "%, 平均信号强度:" + str(self.totalRSSI / self.receivePacketNum) + '\r\n')
                                     self.com1.readAll()
                                 elif self.curState == State.SENDING:  # 如果是发送测试
-                                    self.TextEdit_Receive.insertPlainText("发送测试通过,丢包率为:" + str(lossRate)
+                                    self.TextEdit_Receive.insertPlainText(time.strftime(
+                                        '%Y-%m-%d %H:%M:%S ', time.localtime())
+                                                                          + "发送测试通过,丢包率为:" + str(lossRate)
                                                                           + "%, 平均信号强度:" + str(
                                         self.totalRSSI / self.receivePacketNum) + '\r\n')
                                     self.com2.readAll()
                                 # 重置
-                                self.timer.stop()   # 关闭定时器
+                                self.timer.stop()  # 关闭定时器
                                 self.curState = State.IDLE  # 进入空闲状态
                                 self.totalRSSI = 0
                                 self.receivePacketNum = 0
@@ -289,7 +314,7 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
                                 self.Com_TX_Set_Button.setEnabled(True)
                                 self.Com_RX_Set_Button.setEnabled(True)
                         except Exception as e:
-                            pass
+                            QMessageBox.critical(self, "Error", "解码失败:{}".format(e))
                         finally:
                             self.TextEdit_Receive.insertPlainText("\n")
                     else:
@@ -310,8 +335,8 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
         fileName, _ = QFileDialog.getSaveFileName(self, "保存日志", "", "文本文件 (*.txt)")
         if fileName:
             # 将日志内容写入文件
-            with open(fileName, 'w', encoding='utf-8') as file:
-                file.write(self.TextEdit_Receive.toPlainText())
+            with open(fileName, 'a', encoding='utf-8') as file:
+                file.write(self.TextEdit_Receive.toPlainText() + "\n")
 
     # 开启线程
     def start(self):
@@ -337,8 +362,6 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    # app.setStyleSheet("QPushButton { background-color: #ffffff; color: white; border-style: outset;"
-    #                   " border-width: 1px; border-radius: 10px; border-color: #000000; padding: 6px; }")
     myWin = MyMainWindow()
     # myWin.start()
     # myWin.timer.start(TotalPacketNum * SendingInterval + 5000)

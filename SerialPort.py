@@ -28,9 +28,9 @@ class Ui_ModelTestHelper(object):
         ModelTestHelper.setCursor(QtGui.QCursor(QtCore.Qt.ArrowCursor))
         ModelTestHelper.setMouseTracking(False)
         ModelTestHelper.setStyleSheet("color: rgb(0, 0, 0);\n"
-"                background-color: rgb(255, 255, 255);\n"
-"                font: 9pt \"方正兰亭中黑_GBK\";\n"
-"            ")
+                                      "                background-color: rgb(255, 255, 255);\n"
+                                      "                font: 9pt \"方正兰亭中黑_GBK\";\n"
+                                      "            ")
         self.label = QtWidgets.QLabel(ModelTestHelper)
         self.label.setGeometry(QtCore.QRect(50, 40, 41, 21))
         self.label.setObjectName("label")
@@ -41,7 +41,7 @@ class Ui_ModelTestHelper(object):
         self.TextEdit_Receive.setGeometry(QtCore.QRect(50, 70, 361, 501))
         self.TextEdit_Receive.setAutoFillBackground(False)
         self.TextEdit_Receive.setStyleSheet("background-color: rgb(255, 255, 255);\n"
-"color: rgb(0, 0, 0);")
+                                            "color: rgb(0, 0, 0);")
         self.TextEdit_Receive.setLineWidth(1)
         self.TextEdit_Receive.setObjectName("TextEdit_Receive")
         self.hexShowing_checkBox = QtWidgets.QCheckBox(ModelTestHelper)
@@ -167,7 +167,7 @@ class Ui_ModelTestHelper(object):
         self.gridLayout_2.addWidget(self.hexSending_checkBox, 1, 0, 1, 2)
 
         self.retranslateUi(ModelTestHelper)
-        self.ClearButton.clicked.connect(self.TextEdit_Receive.clear) # type: ignore
+        self.ClearButton.clicked.connect(self.TextEdit_Receive.clear)  # type: ignore
         QtCore.QMetaObject.connectSlotsByName(ModelTestHelper)
 
     def retranslateUi(self, ModelTestHelper):
@@ -175,11 +175,12 @@ class Ui_ModelTestHelper(object):
         ModelTestHelper.setWindowTitle(_translate("ModelTestHelper", "模组测试工具"))
         self.label.setText(_translate("ModelTestHelper", "接收区"))
         self.ClearButton.setText(_translate("ModelTestHelper", "清除"))
-        self.TextEdit_Receive.setHtml(_translate("ModelTestHelper", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
-"<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
-"p, li { white-space: pre-wrap; }\n"
-"</style></head><body style=\" font-family:\'方正兰亭中黑_GBK\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
-"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>"))
+        self.TextEdit_Receive.setHtml(_translate("ModelTestHelper",
+                                                 "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+                                                 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
+                                                 "p, li { white-space: pre-wrap; }\n"
+                                                 "</style></head><body style=\" font-family:\'方正兰亭中黑_GBK\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
+                                                 "<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>"))
         self.hexShowing_checkBox.setText(_translate("ModelTestHelper", "16进制显示"))
         self.Button_Sava_Log.setText(_translate("ModelTestHelper", "保存日志"))
         self.Com_Baud_Combo.setCurrentText(_translate("ModelTestHelper", "1200"))
