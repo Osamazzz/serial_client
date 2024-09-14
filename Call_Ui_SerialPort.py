@@ -1,19 +1,15 @@
 # 逻辑文件
-
-import binascii
-import re
-import sys
 import time
 
-from PyQt5.QtCore import QTimer
-from PyQt5.QtGui import QCloseEvent
+from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtSerialPort import QSerialPort, QSerialPortInfo
 from PyQt5.QtWidgets import *
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtWidgets import QMainWindow
 
+from Client_Util import LossRateValidator
+from Client_Util import RSSIValidator
 from Client_Util import State
 from Client_Util import int8_from_unsigned
-from MyThread import MyThread
 from SerialPort import Ui_ModelTestHelper
 
 PACKET_SIZE = 16  # AT指令包大小
@@ -21,18 +17,66 @@ TotalPacketNum = 100  # 每轮测试应该发送的包为100个，用于丢包�
 SendingInterval = 100  # 发送间隔(ms)
 
 
+# 参数设置窗口类
+class ParamSettingDialog(QDialog):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('请输入参数')
+        self.setWindowFlags(self.windowFlags() | Qt.WindowContextHelpButtonHint)
+        self.setFixedSize(300, 200)
+        layout = QVBoxLayout()
+        # 第一个参数输入
+        self.param1_edit = QLineEdit(self)
+        self.param1_edit.setPlaceholderText('请输入允许的最小RSSI值(负整数)')
+        self.param1_edit.setValidator(RSSIValidator())  # 只允许输入0和负数
+        layout.addWidget(QLabel('RSSI:'))
+        layout.addWidget(self.param1_edit)
+        # 第二个参数输入
+        self.param2_edit = QLineEdit(self)
+        self.param2_edit.setPlaceholderText('请输入允许的最大丢包率(%)')
+        self.param2_edit.setValidator(LossRateValidator())
+        layout.addWidget(QLabel('丢包率:'))
+        layout.addWidget(self.param2_edit)
+        # 确认和取消
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(self.myAccept)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
+        self.setLayout(layout)
+
+    def getParam(self):
+        RSSI = self.param1_edit.text()
+        LossRate = self.param2_edit.text()
+        return RSSI, LossRate
+
+    def myAccept(self):
+        # 检查是否输入参数
+        if not self.param1_edit.text() or not self.param2_edit.text():
+            QMessageBox.warning(self, 'Warning', '所有参数都必须填写')
+        else:
+            self.accept()
+
+
+# 主页面类
 class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
     def __init__(self, parent=None):
         super(MyMainWindow, self).__init__(parent)
         self.com1 = QSerialPort()  # 设置Qt串口类实例1 -> 待测设备
         self.com2 = QSerialPort()  # 设置Qt串口类实例2 -> 陪测设备
-        self.curState = State.IDLE
-        self.my_thread = MyThread(self)
+        self.curState = State.IDLE  # 客户端状态
         self.timer = QTimer(parent=self)  # 设置定时器
         self.receivePacketNum = 0  # 初始化实际收到的包数,用于计算丢包率
         self.totalRSSI = 0  # 总的RSSI，用于计算平均RSSI
         self.curPacketNum = -1  # 当前包序号
         self.isTimeOut = False  # 超时标志
+        self.isPass = False  # 测试通过标志
+        self.isComOpen = False
+
+        # 测试通过指标
+        self.passLossRate = 0.2
+        self.passRecNum = (1 - self.passLossRate) * TotalPacketNum
+        self.passRSSI = -100
+
         self.setupUi(self)
         self.createSignalSlot()
 
@@ -47,9 +91,9 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
         # 注册设置接收模式按钮，发送两组AT指令
         self.Com_RX_Set_Button.clicked.connect(self.Com_RX_Set_Button_Clicked)
         self.Com_Reset_Button.clicked.connect(self.Com_Reset_Button_Clicked)  # 注册重置按钮，发送重置AT指令
-        self.hexShowing_checkBox.stateChanged.connect(self.hexShowingClicked)  # 注册16进制显示勾选框
-        self.hexSending_checkBox.stateChanged.connect(self.hexSendingClicked)  # 注册16进制发送勾选框
         self.Button_Sava_Log.clicked.connect(self.saveLog)  # 注册保存日志按钮
+        self.Button_Param_Setting.clicked.connect(self.openParamSettingDialog)  # 参数设置按钮
+        self.Com_Baud_Combo.setCurrentIndex(10)  # 设置默认波特率为115200
         # 接收数据
         self.com1.readyRead.connect(self.Com_Receive_Data)
         self.com2.readyRead.connect(self.Com_Receive_Data)
@@ -59,21 +103,51 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
     def clearText(self):
         self.TextEdit_Receive.clear()
 
+    def openParamSettingDialog(self):
+        dialog = ParamSettingDialog()
+        if dialog.exec_() == QDialog.Accepted:
+            RSSI, LossRate = dialog.getParam()
+            # 重新设置新的参数值
+            self.passRSSI = int(RSSI)
+            self.passLossRate = int(LossRate) / 100
+            self.passRecNum = int((1 - self.passLossRate) * TotalPacketNum)
+            print(f'RSSI: {self.passRSSI}, 丢包率: {self.passLossRate}, passRecNum:{self.passRecNum}')
+        else:
+            print('取消设置参数')
+
     # 定时器超时方法
     def timer_timeout(self):
-        self.TextEdit_Receive.insertPlainText("超时,测试失败" + "\r\n")
-        print("超时了")
-        # 直接计算rssi和丢包率
-        if self.receivePacketNum == 0:
-            self.TextEdit_Receive.insertPlainText(
-                time.strftime('%Y-%m-%d %H:%M:%S,', time.localtime()) + "目前丢包率为:100%,请检查设备是否正常\n")
+        if not self.isPass:
+            self.TextEdit_Receive.insertPlainText("超时,测试失败" + "\r\n")
+            # 直接计算rssi和丢包率
+            if self.receivePacketNum == 0:
+                self.TextEdit_Receive.insertPlainText(
+                    time.strftime('%Y-%m-%d %H:%M:%S,', time.localtime()) + "目前丢包率为:100%,请检查设备是否正常\n")
+            else:
+                rssi = self.totalRSSI / self.receivePacketNum
+                lossRate = (100 - self.receivePacketNum)
+                print("rssi:" + str(rssi) + ", loss:" + str(lossRate))
+                self.TextEdit_Receive.insertPlainText(
+                    time.strftime('%Y-%m-%d %H:%M:%S,', time.localtime()) + "目前信号强度为:{:.2f}".format(
+                        rssi) + ", 丢包率为:" + str(lossRate) + "%\n")
         else:
-            rssi = self.totalRSSI / self.receivePacketNum
-            lossRate = (100 - self.receivePacketNum) / 100
-            print("rssi:" + str(rssi) + ", loss:" + str(lossRate))
-            self.TextEdit_Receive.insertPlainText(
-                time.strftime('%Y-%m-%d %H:%M:%S,', time.localtime()) + "目前信号强度为:" + str(
-                    rssi) + ", 丢包率为:" + str(lossRate) + "%\n")
+            lossRate = (100 - self.receivePacketNum)
+            if self.curState == State.RECEIVING:  # 如果是接收测试
+                (self.TextEdit_Receive
+                 .insertPlainText(time.strftime(
+                    '%Y-%m-%d %H:%M:%S ', time.localtime())
+                                  + "接收测试通过,丢包率为:{:.2f}".format(lossRate)
+                                  + "%, 平均信号强度:{:.2f}".format(
+                    self.totalRSSI / self.receivePacketNum) + '\r\n'))
+                self.com1.readAll()
+            elif self.curState == State.SENDING:  # 如果是发送测试
+                (self.TextEdit_Receive
+                 .insertPlainText(time.strftime(
+                    '%Y-%m-%d %H:%M:%S ', time.localtime())
+                                  + "发送测试通过,丢包率为:{:.2f}".format(lossRate)
+                                  + "%, 平均信号强度:{:.2f}".format(
+                    self.totalRSSI / self.receivePacketNum) + '\r\n'))
+                self.com2.readAll()
         self.curState = State.IDLE
         self.totalRSSI = 0
         self.receivePacketNum = 0
@@ -106,6 +180,7 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
         except Exception as e:
             QMessageBox.critical(self, 'Error', '串口1打开失败:{}'.format(e))
             return
+        self.isComOpen = True
         self.Com_Close_Button.setEnabled(True)
         self.Com_Open_Button.setEnabled(False)
         self.Com_Refresh_Button.setEnabled(False)
@@ -124,6 +199,7 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
             QMessageBox.critical(self, 'Error', '串口关闭失败')
             return
         QMessageBox.information(self, 'OK', '串口关闭成功')
+        self.isComOpen = False
         self.Com_Close_Button.setEnabled(False)
         self.Com_Open_Button.setEnabled(True)
         self.Com_Refresh_Button.setEnabled(True)
@@ -137,89 +213,70 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
     def Com_Send_Data(self, com: QSerialPort, txData: str):
         if len(txData) == 0:
             return
-        if not self.hexSending_checkBox.isChecked():  # 如果不以16进制发送
-            com.write(txData.encode('ascii'))
-        else:
-            Data = txData.replace(' ', '')
-            # 如果16进制不是偶数个字符, 去掉最后一个, [ ]左闭右开
-            if len(Data) % 2 == 1:
-                Data = Data[0:len(Data) - 1]
-            # 如果遇到非16进制字符
-            if Data.isalnum() is False:
-                QMessageBox.critical(self, '错误', '包含非十六进制数')
-            try:
-                hexData = binascii.a2b_hex(Data)
-            except Exception as e:
-                QMessageBox.critical(self, '错误', '转换编码错误')
-                return
-            # 发送16进制数据, 发送格式如 ‘31 32 33 41 42 43’, 代表'123ABC'
-            try:
-                com.write(hexData)
-            except Exception as e:
-                QMessageBox.critical(self, '异常', '十六进制发送错误')
-                return
+        com.write(txData.encode('ascii'))
 
-    # TODO 在进行测试的时候，除复位和清除键位，其他键位不能使用
+    # 在进行测试的时候，除复位和清除键位，其他键位不能使用
 
     # 发射功能测试
     def Com_TX_Set_Button_Clicked(self):
+        if not self.isComOpen:  # 串口未打开
+            QMessageBox.critical(self, 'Error', '串口未打开')
+            return
         # 重置客户端模式，设置为发送测试模式，重置丢包率和信号强度统计
         # 先清空串口缓冲区
-        self.com1.readAll()
+        # self.com1.readAll()
         self.com2.readAll()
         self.curState = State.SENDING
         self.totalRSSI = 0
         self.receivePacketNum = 0
+        self.isPass = False
         self.TextEdit_Receive.insertPlainText("开始进行发送测试..\n")
         self.Com_Send_Data(self.com1, "AT+SET=TESTTX\r\n")  # 向待测设备串口发送->发送模式AT指令
         self.Com_Send_Data(self.com2, "AT+SET=TESTRX\r\n")  # 向陪测设备串口发送->接收模式AT指令
-        self.timer.start(TotalPacketNum * SendingInterval + 2000)  # 开启定时器
-        # self.Com_Close_Button.setEnabled(False)
-        # self.Com_Open_Button.setEnabled(False)
-        # self.Com_Reset_Button.setEnabled(True)
-        # self.ClearButton.setEnabled(True)
-        # self.Com_TX_Set_Button.setEnabled(True)
-        # self.Com_RX_Set_Button.setEnabled(False)
+        self.timer.start(TotalPacketNum * SendingInterval + 5000)  # 开启定时器
+        self.Com_RX_Set_Button.setEnabled(False)
+        self.Com_TX_Set_Button.setEnabled(False)
 
     # 接收功能测试
     def Com_RX_Set_Button_Clicked(self):
+        if not self.isComOpen:  # 串口未打开
+            QMessageBox.critical(self, 'Error', '串口未打开')
+            return
         # 重置客户端模式，设置为接收测试模式，重置丢包率和信号强度统计
         # 先清空串口缓冲区，以免发生错误
         self.com1.readAll()
-        self.com2.readAll()
+        # self.com2.readAll()
         self.curState = State.RECEIVING
         self.totalRSSI = 0
         self.receivePacketNum = 0
+        self.isPass = False
         self.TextEdit_Receive.insertPlainText("开始进行接收测试..\n")
         self.Com_Send_Data(self.com1, "AT+SET=TESTRX\r\n")  # 向待测设备串口发送->接收模式AT指令
         self.Com_Send_Data(self.com2, "AT+SET=TESTTX\r\n")  # 向陪测设备串口发送->发送模式AT指令
-        self.timer.start(TotalPacketNum * SendingInterval + 2000)  # 开启定时器
-        # self.Com_Close_Button.setEnabled(False)
-        # self.Com_Open_Button.setEnabled(False)
-        # self.Com_Reset_Button.setEnabled(True)
-        # self.ClearButton.setEnabled(True)
-        # self.Com_TX_Set_Button.setEnabled(False)
-        # self.Com_RX_Set_Button.setEnabled(True)
+        self.timer.start(TotalPacketNum * SendingInterval + 5000)  # 开启定时器
+        self.Com_RX_Set_Button.setEnabled(False)
+        self.Com_TX_Set_Button.setEnabled(False)
 
     # 发送复位AT指令，使两个设备进入IDLE状态
     def Com_Reset_Button_Clicked(self):
-        # TODO 重置客户端模式，设置为IDLE模式，重置丢包率和信号强度统计
+        if not self.isComOpen:  # 串口未打开
+            QMessageBox.critical(self, 'Error', '串口未打开')
+            return
+        # 重置客户端模式，设置为IDLE模式，重置丢包率和信号强度统计
         # 先清空串口缓冲区，以免发生错误
         self.com1.readAll()
         self.com2.readAll()
         self.curState = State.IDLE
         self.totalRSSI = 0
         self.receivePacketNum = 0
+        self.isPass = False
         self.TextEdit_Receive.insertPlainText("进入空闲状态..\n")
         self.Com_Send_Data(self.com1, "AT+RESET\r\n")
         self.Com_Send_Data(self.com2, "AT+RESET\r\n")
+        # self.clearText()
         self.timer.stop()
-        # self.Com_Close_Button.setEnabled(True)
-        # self.Com_Open_Button.setEnabled(True)
-        # self.Com_Reset_Button.setEnabled(True)
-        # self.ClearButton.setEnabled(True)
-        # self.Com_TX_Set_Button.setEnabled(True)
-        # self.Com_RX_Set_Button.setEnabled(True)
+        self.Com_RX_Set_Button.setEnabled(True)
+        self.Com_TX_Set_Button.setEnabled(True)
 
     # 串口刷新
     def Com_Refresh_Button_Clicked(self):
@@ -234,30 +291,19 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
             com1.setPort(info)
             if com1.open(QSerialPort.ReadWrite):
                 self.Com_Test_Combo.addItem(info.portName())
+                com1.close()
         # 为可选框2添加item
         for info in com_list_2:
             com2.setPort(info)
             if com2.open(QSerialPort.ReadWrite):
                 self.Com_Test_Combo_2.addItem(info.portName())
+                com2.close()
 
     # 串口接收数据
     def Com_Receive_Data(self):
         if self.curState == State.IDLE:  # 如果当前状态为IDLE，则停止进行接收
             return
         else:
-            # if self.isTimeOut:
-            #     print("超时了")
-            #     # 直接计算rssi和丢包率
-            #     rssi = self.totalRSSI / self.receivePacketNum
-            #     lossRate = (100 - self.receivePacketNum) / 100
-            #     print("rssi:" + str(rssi) + ", loss:" + str(lossRate))
-            #     self.TextEdit_Receive.insertPlainText("测试超时失败" + "目前信号强度为:" + str(rssi) + ", 丢包率为:" + str(lossRate) + "%\n")
-            #     self.curState = State.IDLE
-            #     self.totalRSSI = 0
-            #     self.receivePacketNum = 0
-            #     self.curPacketNum = -1
-            #     self.isTimeOut = False
-            #     return
             serial_num, curRSSI, rxData = 0, 0, ""
             try:
                 # 处理接收到的数据
@@ -272,60 +318,56 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
                     self.curPacketNum = serial_num  # 更新当前数据包号
                     self.totalRSSI += curRSSI  # 加入总RSSI，用于计算平均RSSI
                     self.receivePacketNum += 1
-                    if not self.hexShowing_checkBox.isChecked():  # 如果不以16进制显示
-                        com_rev = ""
-                        try:
-                            if self.curState == State.RECEIVING:
-                                com_rev = "待测设备"
-                            elif self.curState == State.SENDING:
-                                com_rev = "陪测设备"
-                            print(rxData.decode('ascii'))
-                            self.TextEdit_Receive.insertPlainText(
-                                time.strftime('%Y-%m-%d %H:%M:%S ', time.localtime()) + com_rev +
-                                "接收到第" + str(serial_num + 1) + "个包,")  # 这里+1是为了让序号从1开始
-                            self.TextEdit_Receive.insertPlainText("信号强度为:" + str(curRSSI) + '\r\n')
-                            if self.curPacketNum == 99 and (100 - self.receivePacketNum) / 100 < 0.05:
-                                lossRate = (100 - self.receivePacketNum) / 100 * 100
-                                if self.curState == State.RECEIVING:  # 如果是接收测试
-                                    self.TextEdit_Receive.insertPlainText(time.strftime(
-                                        '%Y-%m-%d %H:%M:%S ', time.localtime())
-                                        + "接收测试通过,丢包率为:" + str(lossRate)
-                                        + "%, 平均信号强度:" + str(self.totalRSSI / self.receivePacketNum) + '\r\n')
-                                    self.com1.readAll()
-                                elif self.curState == State.SENDING:  # 如果是发送测试
-                                    self.TextEdit_Receive.insertPlainText(time.strftime(
-                                        '%Y-%m-%d %H:%M:%S ', time.localtime())
-                                                                          + "发送测试通过,丢包率为:" + str(lossRate)
-                                                                          + "%, 平均信号强度:" + str(
-                                        self.totalRSSI / self.receivePacketNum) + '\r\n')
-                                    self.com2.readAll()
-                                # 重置
-                                self.timer.stop()  # 关闭定时器
-                                self.curState = State.IDLE  # 进入空闲状态
-                                self.totalRSSI = 0
-                                self.receivePacketNum = 0
-                                self.curPacketNum = -1
-                                self.isTimeOut = False
-                                # 重新启用被禁用的按钮
-                                self.Com_Close_Button.setEnabled(True)
-                                self.Com_Open_Button.setEnabled(True)
-                                self.Com_Reset_Button.setEnabled(True)
-                                self.ClearButton.setEnabled(True)
-                                self.Com_TX_Set_Button.setEnabled(True)
-                                self.Com_RX_Set_Button.setEnabled(True)
-                        except Exception as e:
-                            QMessageBox.critical(self, "Error", "解码失败:{}".format(e))
-                        finally:
-                            self.TextEdit_Receive.insertPlainText("\n")
-                    else:
-                        Data = binascii.b2a_hex(rxData).decode('ascii')
-                        # re 正则表达式 (.{2}) 匹配两个字母
-                        hexStr = ' 0x'.join(re.findall('(.{2})', Data))
-                        # 补齐第一个 0x
-                        hexStr = '0x' + hexStr
-                        self.TextEdit_Receive.insertPlainText(hexStr)
-                        self.TextEdit_Receive.insertPlainText(' ')
-
+                    com_rev = ""
+                    try:
+                        if self.curState == State.RECEIVING:
+                            com_rev = "待测设备"
+                        elif self.curState == State.SENDING:
+                            com_rev = "陪测设备"
+                        print(rxData.decode('ascii'))
+                        self.TextEdit_Receive.insertPlainText(
+                            time.strftime('%Y-%m-%d %H:%M:%S ', time.localtime()) + com_rev +
+                            "接收到第" + str(serial_num + 1) + "个包,")  # 这里+1是为了让序号从1开始
+                        self.TextEdit_Receive.insertPlainText("信号强度为:" + str(curRSSI) + '\r\n')
+                        # 不能单纯的以序号作为判断的依据
+                        if self.receivePacketNum > self.passRecNum:
+                            self.isPass = True  # 让本次测试通过
+                        if self.curPacketNum == 99 and self.isPass:
+                            lossRate = (100 - self.receivePacketNum)
+                            if self.curState == State.RECEIVING:  # 如果是接收测试
+                                self.TextEdit_Receive.insertPlainText(time.strftime(
+                                    '%Y-%m-%d %H:%M:%S ', time.localtime())
+                                                                      + "接收测试通过,丢包率为:{:.2f}".format(
+                                    lossRate)
+                                                                      + "%, 平均信号强度:{:.2f}".format(
+                                    self.totalRSSI / self.receivePacketNum) + '\r\n')
+                                self.com1.readAll()
+                            elif self.curState == State.SENDING:  # 如果是发送测试
+                                self.TextEdit_Receive.insertPlainText(time.strftime(
+                                    '%Y-%m-%d %H:%M:%S ', time.localtime())
+                                                                      + "发送测试通过,丢包率为:{:.2f}".format(
+                                    lossRate)
+                                                                      + "%, 平均信号强度:{:.2f}".format(
+                                    self.totalRSSI / self.receivePacketNum) + '\r\n')
+                                self.com2.readAll()
+                            # 重置
+                            self.timer.stop()  # 关闭定时器
+                            self.curState = State.IDLE  # 进入空闲状态
+                            self.totalRSSI = 0
+                            self.receivePacketNum = 0
+                            self.curPacketNum = -1
+                            self.isTimeOut = False
+                            # 重新启用被禁用的按钮
+                            self.Com_Close_Button.setEnabled(True)
+                            self.Com_Open_Button.setEnabled(True)
+                            self.Com_Reset_Button.setEnabled(True)
+                            self.ClearButton.setEnabled(True)
+                            self.Com_TX_Set_Button.setEnabled(True)
+                            self.Com_RX_Set_Button.setEnabled(True)
+                    except Exception as e:
+                        QMessageBox.critical(self, "Error", "解码失败:{}".format(e))
+                    finally:
+                        self.TextEdit_Receive.insertPlainText("\n")
             except Exception as e:
                 QMessageBox.critical(self, 'Error', '串口接收数据错误：{}'.format(e))
 
@@ -337,33 +379,3 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
             # 将日志内容写入文件
             with open(fileName, 'a', encoding='utf-8') as file:
                 file.write(self.TextEdit_Receive.toPlainText() + "\n")
-
-    # 开启线程
-    def start(self):
-        self.my_thread.start()
-
-    # 16进制显示勾选
-    def hexShowingClicked(self):
-        if self.hexShowing_checkBox.isChecked():
-            # 接收区换行
-            self.TextEdit_Receive.insertPlainText('\n')
-
-    # 16进制发送勾选
-    def hexSendingClicked(self):
-        if self.hexSending_checkBox.isChecked():
-            pass
-
-    # 关闭事件
-    def closeEvent(self, event: QCloseEvent):
-        self.my_thread.requestInterruption()
-        # self.my_thread.wait()
-        super().closeEvent(event)
-
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    myWin = MyMainWindow()
-    # myWin.start()
-    # myWin.timer.start(TotalPacketNum * SendingInterval + 5000)
-    myWin.show()
-    sys.exit(app.exec_())

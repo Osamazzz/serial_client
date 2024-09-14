@@ -45,8 +45,8 @@
   </property>
   <property name="styleSheet">
    <string notr="true">color: rgb(0, 0, 0);
-                background-color: rgb(255, 255, 255);
-                font: 9pt &quot;方正兰亭中黑_GBK&quot;;
+background-color: rgb(255, 255, 255);
+font: 9pt &quot;方正兰亭中黑_GBK&quot;;
             </string>
   </property>
   <widget class="QLabel" name="label">
@@ -65,11 +65,47 @@
   <widget class="QPushButton" name="ClearButton">
    <property name="geometry">
     <rect>
-     <x>330</x>
-     <y>32</y>
+     <x>360</x>
+     <y>30</y>
      <width>81</width>
      <height>31</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>方正兰亭中黑_GBK</family>
+     <pointsize>9</pointsize>
+     <weight>50</weight>
+     <italic>false</italic>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton
+        {
+            border-style: outset;
+            border-width: 1px;
+            border-radius:5px; 
+            min-width:2em;
+            color:black; 
+            padding: 5px;
+        }
+
+        QPushButton:hover{
+        background-color: qlineargradient(spread:pad, x1:0.909,
+        y1:0.864, x2:0.926, y2:0, stop:0.448864 rgba(255, 239, 88, 250)
+        , stop:1 rgba(255, 255, 255, 255));
+        }
+
+        QPushButton:pressed
+        {
+            background-color: #1E90FF; /*伪状态经过时背景色*/
+            border-style: inset;
+        }
+        QPushButton:!enabled{
+            background-color: rgb(100, 100, 100);
+            border-style: inset;
+        }</string>
    </property>
    <property name="text">
     <string>清除</string>
@@ -80,7 +116,7 @@
     <rect>
      <x>50</x>
      <y>70</y>
-     <width>361</width>
+     <width>391</width>
      <height>501</height>
     </rect>
    </property>
@@ -102,19 +138,6 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
    </property>
   </widget>
-  <widget class="QCheckBox" name="hexShowing_checkBox">
-   <property name="geometry">
-    <rect>
-     <x>240</x>
-     <y>39</y>
-     <width>81</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>16进制显示</string>
-   </property>
-  </widget>
   <widget class="QPushButton" name="Button_Sava_Log">
    <property name="geometry">
     <rect>
@@ -123,6 +146,33 @@ p, li { white-space: pre-wrap; }
      <width>75</width>
      <height>31</height>
     </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QPushButton
+        {
+            border-style: outset;
+            border-width: 1px;
+            border-radius:5px; 
+            min-width:2em;
+            color:black; 
+            padding: 5px;
+        }
+
+        QPushButton:hover{
+        background-color: qlineargradient(spread:pad, x1:0.909,
+        y1:0.864, x2:0.926, y2:0, stop:0.448864 rgba(255, 239, 88, 250)
+        , stop:1 rgba(255, 255, 255, 255));
+        }
+
+        QPushButton:pressed
+        {
+            background-color: #1E90FF; /*伪状态经过时背景色*/
+            border-style: inset;
+        }
+        QPushButton:!enabled{
+            background-color: rgb(100, 100, 100);
+            border-style: inset;
+        }</string>
    </property>
    <property name="text">
     <string>保存日志</string>
@@ -161,6 +211,9 @@ p, li { white-space: pre-wrap; }
     <layout class="QGridLayout" name="gridLayout">
      <item row="1" column="1">
       <widget class="QComboBox" name="Com_Baud_Combo">
+       <property name="styleSheet">
+        <string notr="true"/>
+       </property>
        <property name="editable">
         <bool>true</bool>
        </property>
@@ -275,6 +328,33 @@ p, li { white-space: pre-wrap; }
      </item>
      <item row="4" column="1">
       <widget class="QPushButton" name="Com_Open_Button">
+       <property name="styleSheet">
+        <string notr="true">QPushButton
+        {
+            border-style: outset;
+            border-width: 1px;
+            border-radius:5px; 
+            min-width:2em;
+            color:black; 
+            padding: 5px;
+        }
+
+        QPushButton:hover{
+        background-color: qlineargradient(spread:pad, x1:0.909,
+        y1:0.864, x2:0.926, y2:0, stop:0.448864 rgba(255, 239, 88, 250)
+        , stop:1 rgba(255, 255, 255, 255));
+        }
+
+        QPushButton:pressed
+        {
+            background-color: #1E90FF; /*伪状态经过时背景色*/
+            border-style: inset;
+        }
+        QPushButton:!enabled{
+            background-color: rgb(100, 100, 100);
+            border-style: inset;
+        }</string>
+       </property>
        <property name="text">
         <string>Open</string>
        </property>
@@ -292,6 +372,33 @@ p, li { white-space: pre-wrap; }
      </item>
      <item row="5" column="1">
       <widget class="QPushButton" name="Com_Close_Button">
+       <property name="styleSheet">
+        <string notr="true">QPushButton
+        {
+            border-style: outset;
+            border-width: 1px;
+            border-radius:5px; 
+            min-width:2em;
+            color:black; 
+            padding: 5px;
+        }
+
+        QPushButton:hover{
+        background-color: qlineargradient(spread:pad, x1:0.909,
+        y1:0.864, x2:0.926, y2:0, stop:0.448864 rgba(255, 239, 88, 250)
+        , stop:1 rgba(255, 255, 255, 255));
+        }
+
+        QPushButton:pressed
+        {
+            background-color: #1E90FF; /*伪状态经过时背景色*/
+            border-style: inset;
+        }
+        QPushButton:!enabled{
+            background-color: rgb(100, 100, 100);
+            border-style: inset;
+        }</string>
+       </property>
        <property name="text">
         <string>Close</string>
        </property>
@@ -332,6 +439,33 @@ p, li { white-space: pre-wrap; }
      </item>
      <item row="0" column="1">
       <widget class="QPushButton" name="Com_Refresh_Button">
+       <property name="styleSheet">
+        <string notr="true">QPushButton
+        {
+            border-style: outset;
+            border-width: 1px;
+            border-radius:5px; 
+            min-width:2em;
+            color:black; 
+            padding: 5px;
+        }
+
+        QPushButton:hover{
+        background-color: qlineargradient(spread:pad, x1:0.909,
+        y1:0.864, x2:0.926, y2:0, stop:0.448864 rgba(255, 239, 88, 250)
+        , stop:1 rgba(255, 255, 255, 255));
+        }
+
+        QPushButton:pressed
+        {
+            background-color: #1E90FF; /*伪状态经过时背景色*/
+            border-style: inset;
+        }
+        QPushButton:!enabled{
+            background-color: rgb(100, 100, 100);
+            border-style: inset;
+        }</string>
+       </property>
        <property name="text">
         <string>刷新</string>
        </property>
@@ -359,7 +493,7 @@ p, li { white-space: pre-wrap; }
      <x>460</x>
      <y>420</y>
      <width>241</width>
-     <height>131</height>
+     <height>151</height>
     </rect>
    </property>
    <property name="frameShape">
@@ -380,12 +514,73 @@ p, li { white-space: pre-wrap; }
       <x>10</x>
       <y>10</y>
       <width>222</width>
-      <height>111</height>
+      <height>131</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout_2">
-     <item row="2" column="1">
+     <item row="4" column="0">
+      <widget class="QPushButton" name="Com_TX_Set_Button">
+       <property name="styleSheet">
+        <string notr="true">QPushButton
+        {
+            border-style: outset;
+            border-width: 1px;
+            border-radius:5px; 
+            min-width:2em;
+            color:black; 
+            padding: 5px;
+        }
+
+        QPushButton:hover{
+        background-color: qlineargradient(spread:pad, x1:0.909,
+        y1:0.864, x2:0.926, y2:0, stop:0.448864 rgba(255, 239, 88, 250)
+        , stop:1 rgba(255, 255, 255, 255));
+        }
+
+        QPushButton:pressed
+        {
+            background-color: #1E90FF; /*伪状态经过时背景色*/
+            border-style: inset;
+        }
+        QPushButton:!enabled{
+            background-color: rgb(100, 100, 100);
+            border-style: inset;
+        }</string>
+       </property>
+       <property name="text">
+        <string>发射功能测试</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
       <widget class="QPushButton" name="Com_RX_Set_Button">
+       <property name="styleSheet">
+        <string notr="true">QPushButton
+        {
+            border-style: outset;
+            border-width: 1px;
+            border-radius:5px; 
+            min-width:2em;
+            color:black; 
+            padding: 5px;
+        }
+
+        QPushButton:hover{
+        background-color: qlineargradient(spread:pad, x1:0.909,
+        y1:0.864, x2:0.926, y2:0, stop:0.448864 rgba(255, 239, 88, 250)
+        , stop:1 rgba(255, 255, 255, 255));
+        }
+
+        QPushButton:pressed
+        {
+            background-color: #1E90FF; /*伪状态经过时背景色*/
+            border-style: inset;
+        }
+        QPushButton:!enabled{
+            background-color: rgb(100, 100, 100);
+            border-style: inset;
+        }</string>
+       </property>
        <property name="text">
         <string>接收功能测试</string>
        </property>
@@ -417,24 +612,71 @@ p, li { white-space: pre-wrap; }
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
-      <widget class="QPushButton" name="Com_TX_Set_Button">
-       <property name="text">
-        <string>发射功能测试</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="0" colspan="2">
+     <item row="5" column="0" colspan="2">
       <widget class="QPushButton" name="Com_Reset_Button">
+       <property name="styleSheet">
+        <string notr="true">QPushButton
+        {
+            border-style: outset;
+            border-width: 1px;
+            border-radius:5px; 
+            min-width:2em;
+            color:black; 
+            padding: 5px;
+        }
+
+        QPushButton:hover{
+        background-color: qlineargradient(spread:pad, x1:0.909,
+        y1:0.864, x2:0.926, y2:0, stop:0.448864 rgba(255, 239, 88, 250)
+        , stop:1 rgba(255, 255, 255, 255));
+        }
+
+        QPushButton:pressed
+        {
+            background-color: #1E90FF; /*伪状态经过时背景色*/
+            border-style: inset;
+        }
+        QPushButton:!enabled{
+            background-color: rgb(100, 100, 100);
+            border-style: inset;
+        }</string>
+       </property>
        <property name="text">
         <string>复位</string>
        </property>
       </widget>
      </item>
      <item row="1" column="0" colspan="2">
-      <widget class="QCheckBox" name="hexSending_checkBox">
+      <widget class="QPushButton" name="Button_Param_Setting">
+       <property name="styleSheet">
+        <string notr="true">QPushButton
+        {
+            border-style: outset;
+            border-width: 1px;
+            border-radius:5px; 
+            min-width:2em;
+            color:black; 
+            padding: 5px;
+        }
+
+        QPushButton:hover{
+        background-color: qlineargradient(spread:pad, x1:0.909,
+        y1:0.864, x2:0.926, y2:0, stop:0.448864 rgba(255, 239, 88, 250)
+        , stop:1 rgba(255, 255, 255, 255));
+        }
+
+        QPushButton:pressed
+        {
+            background-color: #1E90FF; /*伪状态经过时背景色*/
+            border-style: inset;
+        }
+        QPushButton:!enabled{
+            background-color: rgb(100, 100, 100);
+            border-style: inset;
+        }</string>
+       </property>
        <property name="text">
-        <string>16进制发送</string>
+        <string>参数设置</string>
        </property>
       </widget>
      </item>
