@@ -117,7 +117,7 @@ font: 9pt &quot;方正兰亭中黑_GBK&quot;;
      <x>50</x>
      <y>70</y>
      <width>391</width>
-     <height>501</height>
+     <height>511</height>
     </rect>
    </property>
    <property name="autoFillBackground">
@@ -142,7 +142,7 @@ p, li { white-space: pre-wrap; }
    <property name="geometry">
     <rect>
      <x>50</x>
-     <y>580</y>
+     <y>590</y>
      <width>75</width>
      <height>31</height>
     </rect>
@@ -356,7 +356,7 @@ p, li { white-space: pre-wrap; }
         }</string>
        </property>
        <property name="text">
-        <string>Open</string>
+        <string>打开</string>
        </property>
       </widget>
      </item>
@@ -400,7 +400,7 @@ p, li { white-space: pre-wrap; }
         }</string>
        </property>
        <property name="text">
-        <string>Close</string>
+        <string>关闭</string>
        </property>
        <property name="default">
         <bool>false</bool>
@@ -493,7 +493,7 @@ p, li { white-space: pre-wrap; }
      <x>460</x>
      <y>420</y>
      <width>241</width>
-     <height>151</height>
+     <height>161</height>
     </rect>
    </property>
    <property name="frameShape">
@@ -514,7 +514,7 @@ p, li { white-space: pre-wrap; }
       <x>10</x>
       <y>10</y>
       <width>222</width>
-      <height>131</height>
+      <height>141</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout_2">
@@ -586,33 +586,7 @@ p, li { white-space: pre-wrap; }
        </property>
       </widget>
      </item>
-     <item row="0" column="0" colspan="2">
-      <widget class="QLabel" name="Com_Model_Set_Label">
-       <property name="maximumSize">
-        <size>
-         <width>220</width>
-         <height>40</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <family>方正兰亭中黑_GBK</family>
-         <pointsize>9</pointsize>
-         <weight>50</weight>
-         <italic>false</italic>
-         <bold>false</bold>
-         <strikeout>false</strikeout>
-        </font>
-       </property>
-       <property name="text">
-        <string>模块功能设置</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="0" colspan="2">
+     <item row="6" column="0" colspan="2">
       <widget class="QPushButton" name="Com_Reset_Button">
        <property name="styleSheet">
         <string notr="true">QPushButton
@@ -646,7 +620,67 @@ p, li { white-space: pre-wrap; }
        </property>
       </widget>
      </item>
-     <item row="1" column="0" colspan="2">
+     <item row="0" column="0" colspan="2">
+      <widget class="QLabel" name="Com_Model_Set_Label">
+       <property name="maximumSize">
+        <size>
+         <width>220</width>
+         <height>40</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>方正兰亭中黑_GBK</family>
+         <pointsize>9</pointsize>
+         <weight>50</weight>
+         <italic>false</italic>
+         <bold>false</bold>
+         <strikeout>false</strikeout>
+        </font>
+       </property>
+       <property name="text">
+        <string>模块功能设置</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="0" colspan="2">
+      <widget class="QPushButton" name="OneKey_Button">
+       <property name="styleSheet">
+        <string notr="true">QPushButton
+        {
+            border-style: outset;
+            border-width: 1px;
+            border-radius:5px; 
+            min-width:2em;
+            color:black; 
+            padding: 5px;
+        }
+
+        QPushButton:hover{
+        background-color: qlineargradient(spread:pad, x1:0.909,
+        y1:0.864, x2:0.926, y2:0, stop:0.448864 rgba(255, 239, 88, 250)
+        , stop:1 rgba(255, 255, 255, 255));
+        }
+
+        QPushButton:pressed
+        {
+            background-color: #1E90FF; /*伪状态经过时背景色*/
+            border-style: inset;
+        }
+        QPushButton:!enabled{
+            background-color: rgb(100, 100, 100);
+            border-style: inset;
+        }</string>
+       </property>
+       <property name="text">
+        <string>一键测试</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="0">
       <widget class="QPushButton" name="Button_Param_Setting">
        <property name="styleSheet">
         <string notr="true">QPushButton
@@ -676,7 +710,41 @@ p, li { white-space: pre-wrap; }
         }</string>
        </property>
        <property name="text">
-        <string>参数设置</string>
+        <string>指标设置</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QPushButton" name="Button_Param_Setting_2">
+       <property name="styleSheet">
+        <string notr="true">QPushButton
+        {
+            border-style: outset;
+            border-width: 1px;
+            border-radius:5px; 
+            min-width:2em;
+            color:black; 
+            padding: 5px;
+        }
+
+        QPushButton:hover{
+        background-color: qlineargradient(spread:pad, x1:0.909,
+        y1:0.864, x2:0.926, y2:0, stop:0.448864 rgba(255, 239, 88, 250)
+        , stop:1 rgba(255, 255, 255, 255));
+        }
+
+        QPushButton:pressed
+        {
+            background-color: #1E90FF; /*伪状态经过时背景色*/
+            border-style: inset;
+        }
+        QPushButton:!enabled{
+            background-color: rgb(100, 100, 100);
+            border-style: inset;
+        }</string>
+       </property>
+       <property name="text">
+        <string>功率设置</string>
        </property>
       </widget>
      </item>

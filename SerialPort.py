@@ -70,14 +70,14 @@ class Ui_ModelTestHelper(object):
 "        }")
         self.ClearButton.setObjectName("ClearButton")
         self.TextEdit_Receive = QtWidgets.QTextEdit(ModelTestHelper)
-        self.TextEdit_Receive.setGeometry(QtCore.QRect(50, 70, 391, 501))
+        self.TextEdit_Receive.setGeometry(QtCore.QRect(50, 70, 391, 511))
         self.TextEdit_Receive.setAutoFillBackground(False)
         self.TextEdit_Receive.setStyleSheet("background-color: rgb(255, 255, 255);\n"
 "color: rgb(0, 0, 0);")
         self.TextEdit_Receive.setLineWidth(1)
         self.TextEdit_Receive.setObjectName("TextEdit_Receive")
         self.Button_Sava_Log = QtWidgets.QPushButton(ModelTestHelper)
-        self.Button_Sava_Log.setGeometry(QtCore.QRect(50, 580, 75, 31))
+        self.Button_Sava_Log.setGeometry(QtCore.QRect(50, 590, 75, 31))
         self.Button_Sava_Log.setStyleSheet("QPushButton\n"
 "        {\n"
 "            border-style: outset;\n"
@@ -258,14 +258,14 @@ class Ui_ModelTestHelper(object):
         self.Com_Refresh_Label.setObjectName("Com_Refresh_Label")
         self.gridLayout.addWidget(self.Com_Refresh_Label, 0, 0, 1, 1)
         self.frame_2 = QtWidgets.QFrame(ModelTestHelper)
-        self.frame_2.setGeometry(QtCore.QRect(460, 420, 241, 151))
+        self.frame_2.setGeometry(QtCore.QRect(460, 420, 241, 161))
         self.frame_2.setFrameShape(QtWidgets.QFrame.Box)
         self.frame_2.setFrameShadow(QtWidgets.QFrame.Raised)
         self.frame_2.setLineWidth(1)
         self.frame_2.setMidLineWidth(0)
         self.frame_2.setObjectName("frame_2")
         self.gridLayoutWidget_2 = QtWidgets.QWidget(self.frame_2)
-        self.gridLayoutWidget_2.setGeometry(QtCore.QRect(10, 10, 222, 131))
+        self.gridLayoutWidget_2.setGeometry(QtCore.QRect(10, 10, 222, 141))
         self.gridLayoutWidget_2.setObjectName("gridLayoutWidget_2")
         self.gridLayout_2 = QtWidgets.QGridLayout(self.gridLayoutWidget_2)
         self.gridLayout_2.setContentsMargins(0, 0, 0, 0)
@@ -326,19 +326,6 @@ class Ui_ModelTestHelper(object):
 "        }")
         self.Com_RX_Set_Button.setObjectName("Com_RX_Set_Button")
         self.gridLayout_2.addWidget(self.Com_RX_Set_Button, 4, 1, 1, 1)
-        self.Com_Model_Set_Label = QtWidgets.QLabel(self.gridLayoutWidget_2)
-        self.Com_Model_Set_Label.setMaximumSize(QtCore.QSize(220, 40))
-        font = QtGui.QFont()
-        font.setFamily("方正兰亭中黑_GBK")
-        font.setPointSize(9)
-        font.setBold(False)
-        font.setItalic(False)
-        font.setWeight(50)
-        font.setStrikeOut(False)
-        self.Com_Model_Set_Label.setFont(font)
-        self.Com_Model_Set_Label.setAlignment(QtCore.Qt.AlignCenter)
-        self.Com_Model_Set_Label.setObjectName("Com_Model_Set_Label")
-        self.gridLayout_2.addWidget(self.Com_Model_Set_Label, 0, 0, 1, 2)
         self.Com_Reset_Button = QtWidgets.QPushButton(self.gridLayoutWidget_2)
         self.Com_Reset_Button.setStyleSheet("QPushButton\n"
 "        {\n"
@@ -366,7 +353,48 @@ class Ui_ModelTestHelper(object):
 "            border-style: inset;\n"
 "        }")
         self.Com_Reset_Button.setObjectName("Com_Reset_Button")
-        self.gridLayout_2.addWidget(self.Com_Reset_Button, 5, 0, 1, 2)
+        self.gridLayout_2.addWidget(self.Com_Reset_Button, 6, 0, 1, 2)
+        self.Com_Model_Set_Label = QtWidgets.QLabel(self.gridLayoutWidget_2)
+        self.Com_Model_Set_Label.setMaximumSize(QtCore.QSize(220, 40))
+        font = QtGui.QFont()
+        font.setFamily("方正兰亭中黑_GBK")
+        font.setPointSize(9)
+        font.setBold(False)
+        font.setItalic(False)
+        font.setWeight(50)
+        font.setStrikeOut(False)
+        self.Com_Model_Set_Label.setFont(font)
+        self.Com_Model_Set_Label.setAlignment(QtCore.Qt.AlignCenter)
+        self.Com_Model_Set_Label.setObjectName("Com_Model_Set_Label")
+        self.gridLayout_2.addWidget(self.Com_Model_Set_Label, 0, 0, 1, 2)
+        self.OneKey_Button = QtWidgets.QPushButton(self.gridLayoutWidget_2)
+        self.OneKey_Button.setStyleSheet("QPushButton\n"
+"        {\n"
+"            border-style: outset;\n"
+"            border-width: 1px;\n"
+"            border-radius:5px; \n"
+"            min-width:2em;\n"
+"            color:black; \n"
+"            padding: 5px;\n"
+"        }\n"
+"\n"
+"        QPushButton:hover{\n"
+"        background-color: qlineargradient(spread:pad, x1:0.909,\n"
+"        y1:0.864, x2:0.926, y2:0, stop:0.448864 rgba(255, 239, 88, 250)\n"
+"        , stop:1 rgba(255, 255, 255, 255));\n"
+"        }\n"
+"\n"
+"        QPushButton:pressed\n"
+"        {\n"
+"            background-color: #1E90FF; /*伪状态经过时背景色*/\n"
+"            border-style: inset;\n"
+"        }\n"
+"        QPushButton:!enabled{\n"
+"            background-color: rgb(100, 100, 100);\n"
+"            border-style: inset;\n"
+"        }")
+        self.OneKey_Button.setObjectName("OneKey_Button")
+        self.gridLayout_2.addWidget(self.OneKey_Button, 5, 0, 1, 2)
         self.Button_Param_Setting = QtWidgets.QPushButton(self.gridLayoutWidget_2)
         self.Button_Param_Setting.setStyleSheet("QPushButton\n"
 "        {\n"
@@ -394,7 +422,35 @@ class Ui_ModelTestHelper(object):
 "            border-style: inset;\n"
 "        }")
         self.Button_Param_Setting.setObjectName("Button_Param_Setting")
-        self.gridLayout_2.addWidget(self.Button_Param_Setting, 1, 0, 1, 2)
+        self.gridLayout_2.addWidget(self.Button_Param_Setting, 1, 0, 1, 1)
+        self.Button_Param_Setting_2 = QtWidgets.QPushButton(self.gridLayoutWidget_2)
+        self.Button_Param_Setting_2.setStyleSheet("QPushButton\n"
+"        {\n"
+"            border-style: outset;\n"
+"            border-width: 1px;\n"
+"            border-radius:5px; \n"
+"            min-width:2em;\n"
+"            color:black; \n"
+"            padding: 5px;\n"
+"        }\n"
+"\n"
+"        QPushButton:hover{\n"
+"        background-color: qlineargradient(spread:pad, x1:0.909,\n"
+"        y1:0.864, x2:0.926, y2:0, stop:0.448864 rgba(255, 239, 88, 250)\n"
+"        , stop:1 rgba(255, 255, 255, 255));\n"
+"        }\n"
+"\n"
+"        QPushButton:pressed\n"
+"        {\n"
+"            background-color: #1E90FF; /*伪状态经过时背景色*/\n"
+"            border-style: inset;\n"
+"        }\n"
+"        QPushButton:!enabled{\n"
+"            background-color: rgb(100, 100, 100);\n"
+"            border-style: inset;\n"
+"        }")
+        self.Button_Param_Setting_2.setObjectName("Button_Param_Setting_2")
+        self.gridLayout_2.addWidget(self.Button_Param_Setting_2, 1, 1, 1, 1)
 
         self.retranslateUi(ModelTestHelper)
         self.ClearButton.clicked.connect(self.TextEdit_Receive.clear) # type: ignore
@@ -439,6 +495,8 @@ class Ui_ModelTestHelper(object):
         self.Com_Refresh_Label.setText(_translate("ModelTestHelper", "串口搜索"))
         self.Com_TX_Set_Button.setText(_translate("ModelTestHelper", "发射功能测试"))
         self.Com_RX_Set_Button.setText(_translate("ModelTestHelper", "接收功能测试"))
-        self.Com_Model_Set_Label.setText(_translate("ModelTestHelper", "模块功能设置"))
         self.Com_Reset_Button.setText(_translate("ModelTestHelper", "复位"))
-        self.Button_Param_Setting.setText(_translate("ModelTestHelper", "参数设置"))
+        self.Com_Model_Set_Label.setText(_translate("ModelTestHelper", "模块功能设置"))
+        self.OneKey_Button.setText(_translate("ModelTestHelper", "一键测试"))
+        self.Button_Param_Setting.setText(_translate("ModelTestHelper", "指标设置"))
+        self.Button_Param_Setting_2.setText(_translate("ModelTestHelper", "功率设置"))
