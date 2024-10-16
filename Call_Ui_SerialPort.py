@@ -5,8 +5,8 @@ import threading
 import time
 from datetime import datetime
 
-from PyQt5.QtCore import QTimer, Qt, QThread
-from PyQt5.QtGui import QIntValidator
+from PyQt5.QtCore import QTimer, Qt, QThread, pyqtSignal
+from PyQt5.QtGui import QIntValidator, QFont, QTextCursor, QTextCharFormat, QColor
 from PyQt5.QtSerialPort import QSerialPort, QSerialPortInfo
 from PyQt5.QtWidgets import *
 from PyQt5.QtWidgets import QMainWindow
@@ -18,20 +18,24 @@ from Client_Util import int8_from_unsigned
 from SerialPort import Ui_ModelTestHelper
 
 PACKET_SIZE = 16  # AT指令包大小
-TotalPacketNum = 100  # 每轮测试应该发送的包为100个，用于丢包率测试
+TotalPacketNum = 20  # 每轮测试应该发送的包为20个，用于丢包率测试
 SendingInterval = 100  # 发送间隔(ms)
-
 
 
 # 主页面类
 class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
+    insertData = pyqtSignal(str, int)
+    insertData_with_color = pyqtSignal(str, int, str)
+
     def __init__(self, parent=None):
         super(MyMainWindow, self).__init__(parent)
+        self.isRecPass = False
+        self.isSendPass = False
         self.com1 = QSerialPort()  # 设置Qt串口类实例1 -> 待测设备
         self.com2 = QSerialPort()  # 设置Qt串口类实例2 -> 陪测设备
         self.curState = State.IDLE  # 客户端状态
         self.timer = QTimer(parent=self)  # 设置定时器
-        self.onekey_timer = QTimer(parent=self) # 设置一键测试用的定时器
+        self.onekey_timer = QTimer(parent=self)  # 设置一键测试用的定时器
         self.receivePacketNum = 0  # 初始化实际收到的包数,用于计算丢包率
         self.totalRSSI = 0  # 总的RSSI，用于计算平均RSSI
         self.curPacketNum = -1  # 当前包序号
@@ -41,6 +45,7 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
         self.receiveBuffer = ""  # 接收缓冲区
         self.consumer_thread = None  # 存储消费者线程
         self.recFlag = False
+
 
         # 测试通过指标
         self.passLossRate = 0.05
@@ -70,12 +75,16 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
         # 接收数据
         self.com1.readyRead.connect(self.Com_Receive_Data)
         self.com2.readyRead.connect(self.Com_Receive_Data)
+        self.insertData.connect(self.insert_text_with_font_size)
+        self.insertData_with_color.connect(self.insert_text_with_font_size_and_color)
         # 超时处理
         self.timer.timeout.connect(self.timer_timeout)
         self.onekey_timer.timeout.connect(self.onekey_timeout)
 
         self.TextEdit_Receive.setReadOnly(True)
         self.TextEdit_Receive.setTextInteractionFlags(Qt.NoTextInteraction)
+        self.TextEdit_Result.setReadOnly(True)
+        self.TextEdit_Result.setTextInteractionFlags(Qt.NoTextInteraction)
 
     # 清空接收缓冲区
     def clearText(self):
@@ -88,17 +97,16 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
             return
         dialog = PowerConfigurationDialog()
         if dialog.exec_() == QDialog.Accepted:
-            power = int(dialog.getParam())   # 0-31
+            power = int(dialog.getParam())  # 0-31
             if 0 <= power <= 9:
                 power = '0' + str(power)
             else:
                 power = str(power)
             # 发送AT指令
-            self.Com_Send_Data(self.com1, 'AT+SET=TXPARM'+ power +'\r\n')
-            self.Com_Send_Data(self.com2, 'AT+SET=TXPARM' + power + '\r\n')
+            self.Com_Send_Data(self.com1, 'AT+SET=TXPARM' + power + '\r\n')
+            # self.Com_Send_Data(self.com2, 'AT+SET=TXPARM' + power + '\r\n')
         else:
             print('取消设置参数')
-
 
     # 打开参数设置窗口
     def openParamSettingDialog(self):
@@ -109,19 +117,64 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
             self.passRSSI = int(RSSI)
             self.passLossRate = int(LossRate) / 100
             self.passRecNum = int((1 - self.passLossRate) * TotalPacketNum)
-            self.TextEdit_Receive.insertPlainText(
-                f'设置成功, RSSI: {self.passRSSI}, 丢包率: {self.passLossRate}, 测试通过的最少收包数:{self.passRecNum}\n')
+            self.insert_text_with_font_size(
+                f'设置成功, RSSI: {self.passRSSI}, 丢包率: {self.passLossRate}, 测试通过的最少收包数:{self.passRecNum}\n',
+                9)
         else:
             print('取消设置参数')
+
+    # TextEdit_Result输出方法
+    def insert_text_with_font_size_and_color(self, text: str, font_size: int, color: str):
+        # 创建新的字体格式
+        text_format = QTextCharFormat()
+
+        # 设置字体大小
+        font = QFont()
+        font.setPointSize(font_size)
+        text_format.setFont(font)
+
+        # 设置字体颜色
+        text_format.setForeground(QColor(color))
+
+        # 插入文本
+        cursor = self.TextEdit_Result.textCursor()
+        cursor.movePosition(QTextCursor.End)  # 移动到文本末尾
+        cursor.insertText(text, text_format)  # 直接插入文本和格式
+
+        # 更新 QTextEdit 的光标
+        # text_edit.setTextCursor(cursor)
+
+    def insert_text_with_font_size(self, text: str, font_size: int):
+        # 创建新的字体格式
+        text_format = QTextCharFormat()
+        font = QFont()
+        font.setPointSize(font_size)  # 设置字体大小
+        text_format.setFont(font)
+
+        # 获取当前文本光标并移动到末尾
+        cursor = self.TextEdit_Receive.textCursor()
+        cursor.movePosition(QTextCursor.End)
+
+        # 插入文本并应用字体格式
+        cursor.insertText(text, text_format)
 
     def onekey_timeout(self):
         self.Com_RX_Set_Button_Clicked()
         self.onekey_timer.stop()
+        # self.consumer_thread.textInserted.emit()
 
     # 定时器超时方法
     def timer_timeout(self):
         if not self.isPass:
-            self.TextEdit_Receive.insertPlainText("超时,测试失败" + "\r\n")
+            self.insertData.emit("============================================================\r\n", 9)
+            self.insertData.emit(
+                time.strftime('%Y-%m-%d %H:%M:%S ', time.localtime()) + "本次测试全部结束!\n", 9)
+            self.insertData_with_color.emit(time.strftime('%Y-%m-%d %H:%M:%S ',
+                                                                    time.localtime()) + "测试失败!\n",
+                                                      11, "black")
+            self.insertData_with_color.emit(
+                "FAIL!\n",
+                18, "red")
             # 测试失败，直接终止一键测试timer
             if self.onekey_timer.isActive():
                 self.onekey_timer.stop()
@@ -129,32 +182,50 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
             # 直接计算rssi和丢包率
             if self.receivePacketNum == 0:
                 self.TextEdit_Receive.insertPlainText(
-                    time.strftime('%Y-%m-%d %H:%M:%S,', time.localtime()) + "目前丢包率为:100%,请检查设备是否正常！\n")
+                    time.strftime('%Y-%m-%d %H:%M:%S ', time.localtime()) + "目前丢包率为:100%,请检查设备是否正常！\n\n")
             else:
                 rssi = self.totalRSSI / self.receivePacketNum
-                lossRate = (100 - self.receivePacketNum)
+                lossRate = (TotalPacketNum - self.receivePacketNum) / TotalPacketNum * 100
                 print("rssi:" + str(rssi) + ", loss:" + str(lossRate))
-                self.TextEdit_Receive.insertPlainText(
-                    time.strftime('%Y-%m-%d %H:%M:%S,', time.localtime()) + "目前平均信号强度为:{:.2f}".format(
-                        rssi) + ", 丢包率为:" + str(lossRate) + "%\n")
-        else:
-            lossRate = (100 - self.receivePacketNum)
+                # self.TextEdit_Receive.insertPlainText()
+                self.insertData_with_color.emit("目前平均信号强度为:{:.2f}".format(
+                    rssi) + ", 丢包率为:" + str(lossRate) + "%\n", 11, "black")
+        else:  # 通过了
+            lossRate = (TotalPacketNum - self.receivePacketNum) / TotalPacketNum * 100
             if self.curState == State.RECEIVING:  # 如果是接收测试
-                (self.TextEdit_Receive
-                 .insertPlainText(time.strftime(
+                self.insertData.emit("============================================================\r\n",
+                                                9)
+                self.insertData.emit("本次测试全部结束!\n\n", 9)
+                self.insertData_with_color.emit(time.strftime(
                     '%Y-%m-%d %H:%M:%S ', time.localtime())
-                                  + "接收测试通过,丢包率为:{:.2f}".format(lossRate)
-                                  + "%, 平均信号强度:{:.2f}".format(
-                    self.totalRSSI / self.receivePacketNum) + '\r\n'))
+                                                          + "接收测试通过,丢包率为:{:.2f}".format(lossRate)
+                                                          + "%, 平均信号强度:{:.2f}".format(
+                    self.totalRSSI / self.receivePacketNum) + '\r\n', 11, "black")
                 self.com1.readAll()
             elif self.curState == State.SENDING:  # 如果是发送测试
-                (self.TextEdit_Receive
-                 .insertPlainText(time.strftime(
+                self.insertData.emit("************************************************************\r\n", 9)
+                self.insertData.emit(
+                    time.strftime('%Y-%m-%d %H:%M:%S ', time.localtime()) + "该部分测试结束!\n\n", 9)
+                # self.insert_text_with_font_size(, 12)
+                self.insertData_with_color.emit(time.strftime(
                     '%Y-%m-%d %H:%M:%S ', time.localtime())
-                                  + "发送测试通过,丢包率为:{:.2f}".format(lossRate)
-                                  + "%, 平均信号强度:{:.2f}".format(
-                    self.totalRSSI / self.receivePacketNum) + '\r\n'))
+                                                          + "发送测试通过,丢包率为:{:.2f}".format(lossRate)
+                                                          + "%, 平均信号强度:{:.2f}".format(
+                    self.totalRSSI / self.receivePacketNum) +
+                                                          '\r\n', 11, "black")
                 self.com2.readAll()
+            if self.isRecPass and self.isSendPass:
+                # self.insert_text_with_font_size(, 12)
+                self.insertData_with_color.emit(time.strftime('%Y-%m-%d %H:%M:%S ',
+                                                                        time.localtime()) + "本次功能测试全部通过!\n",
+                                                          11, "black")
+                self.insertData_with_color.emit("PASS!\n",
+                                                          18, "green")
+                # 重置
+                self.isRecPass = False
+                self.isSendPass = False
+
+        self.saveLog()
         self.curState = State.IDLE
         self.totalRSSI = 0
         self.receivePacketNum = 0
@@ -223,8 +294,6 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
             return
         com.write(txData.encode('ascii'))
 
-    # 在进行测试的时候，除复位和清除键位，其他键位不能使用
-
     # 发射功能测试
     def Com_TX_Set_Button_Clicked(self):
         if not self.isComOpen:  # 串口未打开
@@ -239,7 +308,10 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
         self.totalRSSI = 0
         self.receivePacketNum = 0
         self.isPass = False
-        self.TextEdit_Receive.insertPlainText("开始进行发送测试..\n")
+        self.isSendPass = False
+        self.insertData.emit(
+            time.strftime('%Y-%m-%d %H:%M:%S ', time.localtime()) + "开始进行发射功能测试..\n", 9)
+        self.insertData.emit("============================================================\r\n", 9)
         self.Com_Send_Data(self.com1, "AT+SET=TESTTX\r\n")  # 向待测设备串口发送->发送模式AT指令
         self.Com_Send_Data(self.com2, "AT+SET=TESTRX\r\n")  # 向陪测设备串口发送->接收模式AT指令
         self.timer.start(TotalPacketNum * SendingInterval + 3000)  # 开启定时器
@@ -261,7 +333,10 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
         self.totalRSSI = 0
         self.receivePacketNum = 0
         self.isPass = False
-        self.TextEdit_Receive.insertPlainText("开始进行接收测试..\n")
+        self.isRecPass = False
+        self.insertData.emit(
+            time.strftime('%Y-%m-%d %H:%M:%S ', time.localtime()) + "开始进行接收功能测试..\n", 9)
+        self.insertData.emit("************************************************************\r\n", 9)
         self.Com_Send_Data(self.com1, "AT+SET=TESTRX\r\n")  # 向待测设备串口发送->接收模式AT指令
         self.Com_Send_Data(self.com2, "AT+SET=TESTTX\r\n")  # 向陪测设备串口发送->发送模式AT指令
         self.timer.start(TotalPacketNum * SendingInterval + 3000)  # 开启定时器
@@ -269,12 +344,12 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
         self.com1.open(QSerialPort.ReadWrite)
         self.start_consumer()
 
-
     # 连续进行两次测试
     def OneKey_Button_Clicked(self):
+        self.clearText()
+        self.TextEdit_Result.clear()
         self.Com_TX_Set_Button_Clicked()
         self.onekey_timer.start(TotalPacketNum * SendingInterval + 4000)
-
 
     # 发送复位AT指令，使两个设备进入IDLE状态
     def Com_Reset_Button_Clicked(self):
@@ -290,13 +365,16 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
         self.totalRSSI = 0
         self.receivePacketNum = 0
         self.isPass = False
+        self.isSendPass = False
+        self.isRecPass = False
         self.curPacketNum = -1  # 当前包序号
         self.isTimeOut = False  # 超时标志
-        self.TextEdit_Receive.insertPlainText("进入空闲状态..\n")
+        self.insertData.emit(time.strftime('%Y-%m-%d %H:%M:%S ', time.localtime()) + "进入空闲状态..\n", 9)
         self.Com_Send_Data(self.com1, "AT+SET=RESET\r\n")
         self.Com_Send_Data(self.com2, "AT+SET=RESET\r\n")
         # self.clearText()
         self.timer.stop()
+        self.onekey_timer.stop()
         self.Com_RX_Set_Button.setEnabled(True)
         self.Com_TX_Set_Button.setEnabled(True)
         self.stop_consumer()
@@ -360,44 +438,112 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
             self.totalRSSI += curRSSI  # 加入总RSSI，用于计算平均RSSI
             self.receivePacketNum += 1
             com_rev = "待测设备" if self.curState == State.RECEIVING else "陪测设备"
-            self.TextEdit_Receive.insertPlainText(
-                time.strftime('%Y-%m-%d %H:%M:%S ', time.localtime()) + com_rev +
-                "接收到第" + str(serial_num + 1) + "个包,")  # 这里+1是为了让序号从1开始
-            self.TextEdit_Receive.insertPlainText("信号强度为:" + str(curRSSI) + '\r\n')
+            # 这里+1是为了让序号从1开始
+            self.insertData.emit(time.strftime('%Y-%m-%d %H:%M:%S ', time.localtime()) + com_rev +
+                                            "接收到第" + str(serial_num + 1) + "个包,", 9)
+            self.insertData.emit("信号强度为:" + str(curRSSI) + '\r\n', 9)
 
             # 不能单纯的以序号作为判断的依据
             if self.receivePacketNum > self.passRecNum and self.passRSSI < self.totalRSSI / self.receivePacketNum:
                 self.isPass = True  # 让本次测试通过
-            if self.curPacketNum == 99:
+                if self.curState == State.RECEIVING:
+                    self.isRecPass = True
+                elif self.curState == State.SENDING:
+                    self.isSendPass = True
+            if self.curPacketNum == TotalPacketNum - 1:
                 # 可以停止测了
                 if not self.isPass:
-                    self.TextEdit_Receive.insertPlainText("测试失败" + "\r\n")
+                    self.insertData.emit(
+                        "============================================================\r\n", 9)
+                    self.insertData.emit("本次测试全部结束!\n", 9)
+                    # 测试失败，直接终止一键测试timer
+                    if self.onekey_timer.isActive():
+                        self.onekey_timer.stop()
+
+                    self.insertData_with_color.emit(
+                        time.strftime('%Y-%m-%d %H:%M:%S ',
+                                      time.localtime()) + "测试失败!\n",
+                        11, "black")
+                    self.insertData_with_color.emit("FAIL!\n",
+                                                              18, "red")
                     # 直接计算rssi和丢包率
                     rssi = self.totalRSSI / self.receivePacketNum
-                    lossRate = (100 - self.receivePacketNum)
+                    lossRate = (TotalPacketNum - self.receivePacketNum) / TotalPacketNum * 100
                     print("rssi:" + str(rssi) + ", loss:" + str(lossRate))
-                    self.TextEdit_Receive.insertPlainText(
-                        time.strftime('%Y-%m-%d %H:%M:%S,',
-                                      time.localtime()) + "目前平均信号强度为:{:.2f}".format(
-                            rssi) + ", 丢包率为:" + str(lossRate) + "%\n")
+                    # self.TextEdit_Receive.insertPlainText()
+                    self.insertData_with_color.emit(
+                        "目前平均信号强度为:{:.2f}".format(rssi)
+                        + ", 丢包率为:" + str(lossRate) + "%\n",
+                        11, "black")
+
+                    # rssi = self.totalRSSI / self.receivePacketNum
+                    # lossRate = (TotalPacketNum - self.receivePacketNum) / TotalPacketNum * 100
+                    # # print("rssi:" + str(rssi) + ", loss:" + str(lossRate))
+                    # self.TextEdit_Receive.insertPlainText(
+                    #     time.strftime('%Y-%m-%d %H:%M:%S,',
+                    #                   time.localtime()) + "目前平均信号强度为:{:.2f}".format(
+                    #         rssi) + ", 丢包率为:" + str(lossRate) + "%\n")
+
                 else:  # 测试通过了
-                    lossRate = 100 - self.receivePacketNum
+                    lossRate = (TotalPacketNum - self.receivePacketNum) / TotalPacketNum * 100
                     if self.curState == State.RECEIVING:  # 如果是接收测试
-                        self.TextEdit_Receive.insertPlainText(time.strftime(
+                        self.insertData.emit(
+                            "============================================================\r\n", 9)
+                        self.insertData.emit("本次测试全部结束!\n\n", 9)
+                        self.insertData_with_color.emit(time.strftime(
                             '%Y-%m-%d %H:%M:%S ', time.localtime())
-                                                              + "接收测试通过,丢包率为:{:.2f}".format(
-                            lossRate)
-                                                              + "%, 平均信号强度:{:.2f}".format(
-                            self.totalRSSI / self.receivePacketNum) + '\r\n')
+                                                                  + "接收测试通过,丢包率为:{:.2f}".format(lossRate)
+                                                                  + "%, 平均信号强度:{:.2f}".format(
+                            self.totalRSSI / self.receivePacketNum) + '\r\n', 11, "black")
                         self.com1.readAll()
                     elif self.curState == State.SENDING:  # 如果是发送测试
-                        self.TextEdit_Receive.insertPlainText(time.strftime(
+                        # self.insert_text_with_font_size(, 12)
+                        self.insertData.emit(
+                            "************************************************************\r\n", 9)
+                        self.insertData.emit(
+                            time.strftime('%Y-%m-%d %H:%M:%S ', time.localtime()) + "该部分测试结束!\n\n", 9)
+                        self.insertData_with_color.emit(time.strftime(
                             '%Y-%m-%d %H:%M:%S ', time.localtime())
-                                                              + "发送测试通过,丢包率为:{:.2f}".format(
-                            lossRate)
-                                                              + "%, 平均信号强度:{:.2f}".format(
-                            self.totalRSSI / self.receivePacketNum) + '\r\n')
+                                                                  + "发送测试通过,丢包率为:{:.2f}".format(lossRate)
+                                                                  + "%, 平均信号强度:{:.2f}".format(
+                            self.totalRSSI / self.receivePacketNum) + '\r\n', 11, "black")
                         self.com2.readAll()
+                    if self.isRecPass and self.isSendPass:
+                        # self.insert_text_with_font_size(, 12)
+                        self.insertData_with_color.emit(
+                            time.strftime('%Y-%m-%d %H:%M:%S ',
+                                          time.localtime()) + "本次功能测试全部通过!\n",
+                            11, "black")
+                        self.insertData_with_color.emit(
+                            "PASS!\n", 18,
+                            "green")
+
+                        # self.TextEdit_Receive.insertPlainText("\n")
+                        # 重置
+                        self.isRecPass = False
+                        self.isSendPass = False
+
+                    # self.insert_text_with_font_size("===============================================================\r\n", 9)
+                    # lossRate = (TotalPacketNum - self.receivePacketNum) / TotalPacketNum * 100
+                    # if self.curState == State.RECEIVING:  # 如果是接收测试
+                    #     self.insert_text_with_font_size(time.strftime('%Y-%m-%d %H:%M:%S ', time.localtime())
+                    #                                     + "接收测试通过,丢包率为:{:.2f}".format(lossRate)
+                    #                                     + "%, 平均信号强度:{:.2f}".format(
+                    #         self.totalRSSI / self.receivePacketNum) + '\r\n', 12)
+                    #     self.com1.readAll()
+                    # elif self.curState == State.SENDING:  # 如果是发送测试
+                    #     self.insert_text_with_font_size(time.strftime('%Y-%m-%d %H:%M:%S ', time.localtime())
+                    #                                     + "发送测试通过,丢包率为:{:.2f}".format(lossRate)
+                    #                                     + "%, 平均信号强度:{:.2f}".format(
+                    #         self.totalRSSI / self.receivePacketNum) + '\r\n', 12)
+                    #     self.com2.readAll()
+                    # if self.isRecPass and self.isSendPass:
+                    #     self.insert_text_with_font_size("===============================================================\r\n", 9)
+                    #     self.insert_text_with_font_size(time.strftime('%Y-%m-%d %H:%M:%S ', time.localtime())+"本次功能测试全部通过\n", 12)
+                    #     # 重置
+                    #     self.isRecPass = False
+                    #     self.isSendPass = False
+                self.saveLog()  # 保存日志
                 # 重置
                 self.timer.stop()  # 关闭定时器
                 self.curState = State.IDLE  # 进入空闲状态
@@ -419,9 +565,9 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
     # 开启消费者线程
     def start_consumer(self):
         if self.consumer_thread is None or not self.consumer_thread.isRunning():
-            print('none' if self.consumer_thread is None else 'not running')
             self.recFlag = True
             self.consumer_thread = WorkerThread(mainWindow=self)
+            # self.consumer_thread.textInserted.connect(self.insert_text_with_font_size_and_color)
             self.consumer_thread.start()
 
     # 关闭消费者线程
@@ -430,26 +576,40 @@ class MyMainWindow(QMainWindow, Ui_ModelTestHelper):
         if self.consumer_thread is not None:
             self.consumer_thread.quit()
             self.consumer_thread.wait()  # 等待线程结束
+            # self.consumer_thread.textInserted.disconnect()
             self.consumer_thread = None
 
     # 保存日志
     def saveLog(self):
+        # 定义子目录名称
+        log_dir = os.path.join(os.getcwd(), "logs")
+
+        # 如果子目录不存在，则创建它
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+
         # 生成当前时间的时间戳
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        fileName = os.path.join(os.getcwd(), f"product_log_{timestamp}.txt")
+        timestamp = datetime.now().strftime("%Y%m%d_%H")
+
+        # 将文件保存到子目录中
+        fileName = os.path.join(log_dir, f"product_log_{timestamp}.txt")
 
         # 将日志内容写入文件
         with open(fileName, 'a', encoding='utf-8') as file:
             file.write(self.TextEdit_Receive.toPlainText() + "\n")
+            file.write(self.TextEdit_Result.toPlainText() + "\n")
+
 
 # 消费者线程
 class WorkerThread(QThread):
+    # textInserted = pyqtSignal(str, int, str)
     def __init__(self, mainWindow: MyMainWindow, parent=None, ):
         self.mainWindow = mainWindow
         super(WorkerThread, self).__init__(parent)
 
     def run(self):
         self.mainWindow.parseData()
+
 
 # 参数设置窗口类
 class ParamSettingDialog(QDialog):
@@ -490,6 +650,7 @@ class ParamSettingDialog(QDialog):
             QMessageBox.warning(self, 'Warning', '请完整填写两个参数')
         else:
             self.accept()
+
 
 # 功率设置窗口
 class PowerConfigurationDialog(QDialog):

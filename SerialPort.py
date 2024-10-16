@@ -32,7 +32,7 @@ class Ui_ModelTestHelper(object):
 "font: 9pt \"方正兰亭中黑_GBK\";\n"
 "            ")
         self.label = QtWidgets.QLabel(ModelTestHelper)
-        self.label.setGeometry(QtCore.QRect(50, 40, 41, 21))
+        self.label.setGeometry(QtCore.QRect(50, 40, 61, 21))
         self.label.setObjectName("label")
         self.ClearButton = QtWidgets.QPushButton(ModelTestHelper)
         self.ClearButton.setGeometry(QtCore.QRect(360, 30, 81, 31))
@@ -70,14 +70,14 @@ class Ui_ModelTestHelper(object):
 "        }")
         self.ClearButton.setObjectName("ClearButton")
         self.TextEdit_Receive = QtWidgets.QTextEdit(ModelTestHelper)
-        self.TextEdit_Receive.setGeometry(QtCore.QRect(50, 70, 391, 511))
+        self.TextEdit_Receive.setGeometry(QtCore.QRect(50, 70, 391, 391))
         self.TextEdit_Receive.setAutoFillBackground(False)
         self.TextEdit_Receive.setStyleSheet("background-color: rgb(255, 255, 255);\n"
 "color: rgb(0, 0, 0);")
         self.TextEdit_Receive.setLineWidth(1)
         self.TextEdit_Receive.setObjectName("TextEdit_Receive")
         self.Button_Sava_Log = QtWidgets.QPushButton(ModelTestHelper)
-        self.Button_Sava_Log.setGeometry(QtCore.QRect(50, 590, 75, 31))
+        self.Button_Sava_Log.setGeometry(QtCore.QRect(270, 30, 75, 31))
         self.Button_Sava_Log.setStyleSheet("QPushButton\n"
 "        {\n"
 "            border-style: outset;\n"
@@ -451,6 +451,16 @@ class Ui_ModelTestHelper(object):
 "        }")
         self.Button_Param_Setting_2.setObjectName("Button_Param_Setting_2")
         self.gridLayout_2.addWidget(self.Button_Param_Setting_2, 1, 1, 1, 1)
+        self.TextEdit_Result = QtWidgets.QTextEdit(ModelTestHelper)
+        self.TextEdit_Result.setGeometry(QtCore.QRect(50, 500, 391, 81))
+        self.TextEdit_Result.setAutoFillBackground(False)
+        self.TextEdit_Result.setStyleSheet("background-color: rgb(255, 255, 255);\n"
+"color: rgb(0, 0, 0);")
+        self.TextEdit_Result.setLineWidth(1)
+        self.TextEdit_Result.setObjectName("TextEdit_Result")
+        self.label_2 = QtWidgets.QLabel(ModelTestHelper)
+        self.label_2.setGeometry(QtCore.QRect(50, 470, 51, 21))
+        self.label_2.setObjectName("label_2")
 
         self.retranslateUi(ModelTestHelper)
         self.ClearButton.clicked.connect(self.TextEdit_Receive.clear) # type: ignore
@@ -459,7 +469,7 @@ class Ui_ModelTestHelper(object):
     def retranslateUi(self, ModelTestHelper):
         _translate = QtCore.QCoreApplication.translate
         ModelTestHelper.setWindowTitle(_translate("ModelTestHelper", "模组测试工具"))
-        self.label.setText(_translate("ModelTestHelper", "接收区"))
+        self.label.setText(_translate("ModelTestHelper", "串口接收区"))
         self.ClearButton.setText(_translate("ModelTestHelper", "清除"))
         self.TextEdit_Receive.setHtml(_translate("ModelTestHelper", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
@@ -500,3 +510,9 @@ class Ui_ModelTestHelper(object):
         self.OneKey_Button.setText(_translate("ModelTestHelper", "一键测试"))
         self.Button_Param_Setting.setText(_translate("ModelTestHelper", "指标设置"))
         self.Button_Param_Setting_2.setText(_translate("ModelTestHelper", "功率设置"))
+        self.TextEdit_Result.setHtml(_translate("ModelTestHelper", "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+"<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
+"p, li { white-space: pre-wrap; }\n"
+"</style></head><body style=\" font-family:\'方正兰亭中黑_GBK\'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
+"<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><br /></p></body></html>"))
+        self.label_2.setText(_translate("ModelTestHelper", "测试结果"))
